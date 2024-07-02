@@ -111,15 +111,15 @@ variable "schema" {
     developer_only_attribute = optional(bool, false)
     mutable                  = optional(bool, true)
     name                     = string
-    number_attribute_constraints = optional(object({
+    number_attribute_constraints = optional(list(object({
       max_value = optional(string, null)
       min_value = optional(string, null)
-    }), null)
+    })), [])
     required = optional(bool, false)
-    string_attribute_constraints = optional(object({
+    string_attribute_constraints = optional(list(object({
       max_length = optional(string, null)
       min_length = optional(string, null)
-    }), null)
+    })), [])
   }))
   default = []
 }
