@@ -23,9 +23,9 @@ output "cognito_domain" {
 output "cognito_custom_domain" {
   value = var.domain_alias == "" || var.domain_zone == "" ? {} : {
     cloudfront_distribution = aws_cognito_user_pool_domain.this[0].cloudfront_distribution
-    cloudfront_arn =aws_cognito_user_pool_domain.this[0].cloudfront_distribution_arn
-    cloudfront_zone =aws_cognito_user_pool_domain.this[0].cloudfront_distribution_zone_id
-    s3_bucket = aws_cognito_user_pool_domain.this[0].s3_bucket
-    version= aws_cognito_user_pool_domain.this[0].version
+    cloudfront_arn          = aws_cognito_user_pool_domain.this[0].cloudfront_distribution_arn
+    cloudfront_zone         = aws_cognito_user_pool_domain.this[0].cloudfront_distribution_zone_id
+    s3_bucket               = aws_cognito_user_pool_domain.this[0].s3_bucket
+    version                 = aws_cognito_user_pool_domain.this[0].version
   }
 }
