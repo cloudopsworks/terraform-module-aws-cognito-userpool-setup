@@ -22,25 +22,25 @@ variable "domain_certificate_arn" {
   default     = ""
 }
 
-variable "domain_create_cert" {
-  description = "Set to true to create a certificate for the domain, defaults to false."
-  type        = bool
-  default     = false
-}
-
-variable "domain_create_record" {
-  description = "Set to true to create a record for the domain, defaults to false."
-  type        = bool
-  default     = false
-}
-
-variable "domain_alternates" {
-  description = "The domain alternate aliases to use for the Certificate domain"
-  type        = list(string)
-  default     = []
-}
-
-variable "dns_cross_account" {
-  type    = bool
-  default = false
-}
+# variable "domain_create_cert" {
+#   description = "Set to true to create a certificate for the domain, defaults to false."
+#   type        = bool
+#   default     = false
+# }
+#
+# variable "domain_create_record" {
+#   description = "Set to true to create a record for the domain, defaults to false."
+#   type        = bool
+#   default     = false
+# }
+#
+# variable "domain_alternates" {
+#   description = "The domain alternate aliases to use for the Certificate domain"
+#   type        = list(string)
+#   default     = []
+# }
+#
+# variable "dns_cross_account" {
+#   type    = bool
+#   default = false
+# }
