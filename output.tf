@@ -19,3 +19,23 @@ output "cognito_endpoint" {
 output "cognito_domain" {
   value = aws_cognito_user_pool.this.domain
 }
+
+output "cognito_domain_cloudfront" {
+  value = aws_cognito_user_pool_domain.this.cloudfront_distribution
+}
+
+output "cognito_domain_cloudfront_arn" {
+  value = aws_cognito_user_pool_domain.this.cloudfront_distribution_arn
+}
+
+output "cognito_domain_cloudfront_zone" {
+  value = aws_cognito_user_pool_domain.this.cloudfront_distribution_zone_id
+}
+
+output "cognito_domain_s3_bucket" {
+  value = aws_cognito_user_pool_domain.this.s3_bucket
+}
+
+output "cognito_domain_version" {
+  value = aws_cognito_user_pool_domain.this.version
+}
