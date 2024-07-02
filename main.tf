@@ -118,7 +118,3 @@ resource "aws_cognito_user_pool" "this" {
 
   tags = local.all_tags
 }
-
-output "schema" {
-  value = var.schema
-}
