@@ -11,6 +11,6 @@ resource "aws_cognito_user_pool_domain" "this" {
   count           = var.domain_alias != "" && var.domain_zone != "" ? 1 : 0
   domain          = local.cognito_domain
   user_pool_id    = aws_cognito_user_pool.this.id
-  certificate_arn = var.domain_certificate_arn != "" ? var.domain_certificate_arn : (var.domain_create_cert ? aws_acm_certificate_validation.cert_validation[0].certificate_arn : null)
+  certificate_arn = var.domain_certificate_arn != "" ? var.domain_certificate_arn : (var.domain_create_cert ? module.certificate.acm_certificate_arn : null)
 }
 

@@ -33,3 +33,14 @@ variable "domain_create_record" {
   type        = bool
   default     = false
 }
+
+variable "domain_alternates" {
+  description = "The domain alternate aliases to use for the Certificate domain"
+  type        = list(string)
+  default     = []
+}
+
+variable "dns_cross_account" {
+  type    = bool
+  default = false
+}
