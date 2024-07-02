@@ -20,22 +20,12 @@ output "cognito_domain" {
   value = aws_cognito_user_pool.this.domain
 }
 
-output "cognito_domain_cloudfront" {
-  value = aws_cognito_user_pool_domain.this.cloudfront_distribution
-}
-
-output "cognito_domain_cloudfront_arn" {
-  value = aws_cognito_user_pool_domain.this.cloudfront_distribution_arn
-}
-
-output "cognito_domain_cloudfront_zone" {
-  value = aws_cognito_user_pool_domain.this.cloudfront_distribution_zone_id
-}
-
-output "cognito_domain_s3_bucket" {
-  value = aws_cognito_user_pool_domain.this.s3_bucket
-}
-
-output "cognito_domain_version" {
-  value = aws_cognito_user_pool_domain.this.version
+output "cognito_custom_domain" {
+  value = var.domain_alias == "" || var.domain_zone == "" ? {} : {
+    cloudfront_distribution = aws_cognito_user_pool_domain.this[0].cloudfront_distribution
+    cloudfront_arn =aws_cognito_user_pool_domain.this[0].cloudfront_distribution_arn
+    cloudfront_zone =aws_cognito_user_pool_domain.this[0].cloudfront_distribution_zone_id
+    s3_bucket = aws_cognito_user_pool_domain.this[0].s3_bucket
+    version= aws_cognito_user_pool_domain.this[0].version
+  }
 }
