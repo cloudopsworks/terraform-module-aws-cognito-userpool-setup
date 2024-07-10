@@ -144,3 +144,9 @@ variable "device_configuration" {
   })
   default = null
 }
+
+variable "resource_servers" {
+  description = "Resource servers for the user pool, defaults to empty list."
+  type        = any
+  default     = []
+}
