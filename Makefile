@@ -17,4 +17,4 @@ temp_provider:
 
 ## Lint terraform code
 lint: temp_provider
-	$(SELF) terraform/install terraform/get-modules terraform/get-plugins terraform/lint terraform/validate
+	$(SELF) tofu/install tofu/get-modules tofu/get-plugins tofu/lint tofu/validate

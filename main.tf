@@ -5,7 +5,7 @@
 #
 
 resource "aws_cognito_user_pool" "this" {
-  name                       = "user-pool-${local.system_name}"
+  name                       = var.name != "" ? var.name : "${var.name_prefix}-${local.system_name}"
   deletion_protection        = var.deletion_protection ? "ACTIVE" : "INACTIVE"
   username_attributes        = var.username_attributes
   sms_authentication_message = var.sms_authentication_message

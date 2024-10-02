@@ -4,6 +4,18 @@
 #            Distributed Under Apache v2.0 License
 #
 
+variable "name" {
+  description = "The name of the user pool."
+  type        = string
+  default     = ""
+}
+
+variable "name_prefix" {
+  description = "The prefix of the user pool."
+  type        = string
+  default     = "user-pool"
+}
+
 variable "deletion_protection" {
   description = "Set to true to enable deletion protection on the user pool, defaults to true."
   type        = bool
