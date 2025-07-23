@@ -11,12 +11,14 @@ variable "domain_alias" {
   description = "The domain alias for the user pool, defaults to empty."
   type        = string
   default     = ""
+  nullable    = false
 }
 
 variable "domain_zone" {
   description = "The domain zone for the user pool, defaults to empty."
   type        = string
   default     = ""
+  nullable    = false
 }
 
 variable "domain_certificate" {
@@ -30,6 +32,7 @@ variable "domain_certificate_arn" {
   description = "The domain certificate ARN for the user pool, defaults to empty."
   type        = string
   default     = ""
+  nullable    = false
 }
 
 variable "cross_account_acm" {

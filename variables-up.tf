@@ -11,12 +11,14 @@ variable "name" {
   description = "The name of the user pool."
   type        = string
   default     = ""
+  nullable    = false
 }
 
 variable "name_prefix" {
   description = "The prefix of the user pool."
   type        = string
   default     = "user-pool"
+  nullable    = false
 }
 
 variable "deletion_protection" {
@@ -41,12 +43,14 @@ variable "enable_mfa" {
   description = "Enable MFA for the user pool, defaults to false."
   type        = bool
   default     = false
+  nullable    = false
 }
 
 variable "enable_mfa_soft_token" {
   description = "Enable software token MFA for the user pool, defaults to false."
   type        = bool
   default     = false
+  nullable    = false
 }
 
 variable "sms_configuration" {
@@ -63,12 +67,14 @@ variable "username_attributes" {
   description = "The attributes to be used as the username for the user pool, defaults to 'email'."
   type        = list(string)
   default     = ["email"]
+  nullable    = false
 }
 
 variable "sms_authentication_message" {
   description = "The SMS authentication message for the user pool, defaults to 'Your authentication code is {####}'."
   type        = string
   default     = "Your authentication code is {####}"
+  nullable    = false
 }
 
 variable "sms_verification_message" {
@@ -83,13 +89,15 @@ variable "recovery_mechanisms" {
     name     = string
     priority = number
   }))
-  default = []
+  default  = []
+  nullable = false
 }
 
 variable "only_admin_create_user" {
   description = "Set to true to only allow admins to create users, defaults to true."
   type        = bool
   default     = true
+  nullable    = false
 }
 
 variable "invite_message_template" {
@@ -104,6 +112,7 @@ variable "invite_message_template" {
     email_subject = "Your temporary password"
     sms_message   = "Your username is {username} and temporary password is {####}."
   }
+  nullable = false
 }
 
 variable "verification_message_template" {
@@ -136,7 +145,8 @@ variable "schema" {
       min_length = optional(string, null)
     }), null)
   }))
-  default = []
+  default  = []
+  nullable = false
 }
 
 variable "email_configuration" {
@@ -164,4 +174,5 @@ variable "resource_servers" {
   description = "Resource servers for the user pool, defaults to empty list."
   type        = any
   default     = []
+  nullable    = false
 }
