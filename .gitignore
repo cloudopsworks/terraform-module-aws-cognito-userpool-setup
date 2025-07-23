@@ -32,3 +32,4 @@ tronador/
 
 provider.temp.tf
 .terraform.lock.hcl
+.DS_Store

@@ -1,4 +1,4 @@
-name: Terraform Cognito User Pool Setup
+name: Terraform Module for AWS Cognito User Pool Setup
 #logo: logo/logo.jpg
 
 license: "APACHE2"
@@ -8,23 +8,95 @@ copyrights:
     url: "https://cloudops.works"
     year: "2024"
 
-github_repo: cloudopsworks/terraform-module-aws-vpc-setup
+github_repo: cloudopsworks/terraform-module-aws-cognito-userpool-setup
 
 description: |-
-  VPC Module for setting up Cognito User Pool.
+  AWS Cognito User Pool Module for setting up and managing user authentication and authorization. 
+  This module provides comprehensive setup for Cognito User Pools including custom domains, 
+  certificates, and client applications configuration with full support for multi-account deployments.
 
-# Introduction to the project
-#introduction: |-
-#  This is an introduction.
+introduction: |-
+  This Terraform module creates and manages AWS Cognito User Pools with extended functionality for:
+  - Custom domain configuration with ACM certificate management
+  - Multiple client application support
+  - Cross-account certificate management
+  - Comprehensive tagging and organization support
+  - Alert configuration for certificate expiration
 
-# How to use this project
-#usage: |-
+usage: |-
+  To use this module in your Terragrunt configuration:
 
-# Example usage
-#examples: |-
+  ```hcl
+  terraform {
+    source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.0.0"
+  }
 
-# How to get started quickly
-#quickstart: |-
+  inputs = {
+    org             = "myorg"
+    is_hub          = true
+    domain_zone     = "auth.example.com"
+    domain_alias    = "login"
+
+    # Optional: Provide existing certificate ARN
+    domain_certificate_arn = ""
+
+    # Cross-account configuration
+    cross_account_acm = {
+      enabled = true
+      account_id = "123456789012"
+      region     = "us-east-1"
+    }
+
+    # Alert configuration
+    alerts = {
+      enabled     = true
+      sns_topic   = "arn:aws:sns:region:account:topic"
+      time_window = 30
+    }
+  }
+  ```
+
+examples: |-
+  1. Basic User Pool Setup:
+  ```hcl
+  module "cognito_user_pool" {
+    source       = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.0.0"
+    org          = "mycompany"
+    domain_zone  = "auth.mycompany.com"
+    domain_alias = "signin"
+  }
+  ```
+
+  2. Multi-Account Setup with Custom Certificate:
+  ```hcl
+  module "cognito_user_pool" {
+    source       = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.0.0"
+    org          = "enterprise"
+    domain_zone  = "auth.enterprise.com"
+    domain_alias = "login"
+    cross_account_acm = {
+      enabled    = true
+      account_id = "987654321098"
+      region     = "us-east-1"
+    }
+    alerts = {
+      enabled     = true
+      sns_topic   = "arn:aws:sns:us-east-1:123456789012:certificate-alerts"
+      time_window = 30
+    }
+  }
+  ```
+
+quickstart: |-
+  1. Create a new Terragrunt configuration file (terragrunt.hcl)
+  2. Configure the module source and version
+  3. Set required variables:
+     - org: Your organization name
+     - domain_zone: Base domain for authentication
+     - domain_alias: Subdomain prefix for auth endpoint
+  4. Initialize Terragrunt: `terragrunt init`
+  5. Plan your changes: `terragrunt plan`
+  6. Apply the configuration: `terragrunt apply`
 
 include:
   - "docs/targets.md"
