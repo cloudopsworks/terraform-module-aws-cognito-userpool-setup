@@ -7,8 +7,12 @@
 #     Distributed Under Apache v2.0 License
 #
 
+locals {
+  cognito_name = var.name != "" ? var.name : format("%s-%s", var.name_prefix, local.system_name)
+}
+
 resource "aws_cognito_user_pool" "this" {
-  name                       = var.name != "" ? var.name : "${var.name_prefix}-${local.system_name}"
+  name                       = local.cognito_name
   deletion_protection        = var.deletion_protection ? "ACTIVE" : "INACTIVE"
   username_attributes        = var.username_attributes
   sms_authentication_message = var.sms_authentication_message
