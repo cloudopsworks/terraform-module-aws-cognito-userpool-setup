@@ -1,18 +1,27 @@
-# Module configuration
-# Required variables
-{{- range .requiredVariables }}
-{{- if ne .Name "org"}}
-# Description {{ .Description }} , Type: {{ .Type }}
-{{ .Name }}: {{ .DefaultValuePlaceholder }}
-{{- end }}
+# Module configuration for Terragrunt consumers of this module.
+# org, is_hub, spoke_def, and extra_tags are inherited by the generated boilerplate.
 
-{{- end }}
-# Optional variables
-{{- range .optionalVariables }}
-{{- if ne .Name "is_hub" "spoke_def" "extra_args" }}
-# Description {{ .Description }} , Type: {{ .Type }}
-#{{ .Name }}: {{ .DefaultValue }}
-{{- end }}
+# Optional override when you do not want the default user-pool-<system-name> naming.
+name: ""
+name_prefix: "user-pool"
 
-{{- end }}
+domain_zone: "auth.example.com"
+domain_alias: "login"
+domain_certificate: true
+domain_certificate_arn: ""
 
+# Set to true only when the module caller passes the aws.cross_account provider alias.
+cross_account_acm: false
+
+alerts:
+  enabled: false
+  priority: 3
+  sns_topic_arn: ""
+
+deletion_protection: true
+enable_mfa: false
+enable_mfa_soft_token: false
+username_attributes:
+  - email
+
+resource_servers: []
