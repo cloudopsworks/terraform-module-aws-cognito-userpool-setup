@@ -11,8 +11,8 @@ copyrights:
 github_repo: cloudopsworks/terraform-module-aws-cognito-userpool-setup
 
 description: |-
-  AWS Cognito User Pool Module for setting up and managing user authentication and authorization. 
-  This module provides comprehensive setup for Cognito User Pools including custom domains, 
+  AWS Cognito User Pool Module for setting up and managing user authentication and authorization.
+  This module provides comprehensive setup for Cognito User Pools including custom domains,
   certificates, and client applications configuration with full support for multi-account deployments.
 
 introduction: |-
@@ -28,30 +28,31 @@ usage: |-
 
   ```hcl
   terraform {
-    source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.0.0"
+    source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.1.3"
   }
 
   inputs = {
-    org             = "myorg"
-    is_hub          = true
-    domain_zone     = "auth.example.com"
-    domain_alias    = "login"
-
-    # Optional: Provide existing certificate ARN
-    domain_certificate_arn = ""
-
-    # Cross-account configuration
-    cross_account_acm = {
-      enabled = true
-      account_id = "123456789012"
-      region     = "us-east-1"
+    org = {
+      organization_name = "myorg"
+      organization_unit = "platform"
+      environment_type  = "production"
+      environment_name  = "shared"
     }
 
-    # Alert configuration
+    is_hub                 = true
+    domain_zone            = "auth.example.com"
+    domain_alias           = "login"
+    name_prefix            = "user-pool"
+    domain_certificate     = true
+    domain_certificate_arn = ""
+
+    # Set to true only when the caller also passes the aws.cross_account provider alias.
+    cross_account_acm = false
+
     alerts = {
-      enabled     = true
-      sns_topic   = "arn:aws:sns:region:account:topic"
-      time_window = 30
+      enabled       = true
+      priority      = 3
+      sns_topic_arn = "arn:aws:sns:us-east-1:123456789012:cognito-certificate-alerts"
     }
   }
   ```
@@ -60,8 +61,15 @@ examples: |-
   1. Basic User Pool Setup:
   ```hcl
   module "cognito_user_pool" {
-    source       = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.0.0"
-    org          = "mycompany"
+    source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.1.3"
+
+    org = {
+      organization_name = "mycompany"
+      organization_unit = "platform"
+      environment_type  = "production"
+      environment_name  = "shared"
+    }
+
     domain_zone  = "auth.mycompany.com"
     domain_alias = "signin"
   }
@@ -70,19 +78,23 @@ examples: |-
   2. Multi-Account Setup with Custom Certificate:
   ```hcl
   module "cognito_user_pool" {
-    source       = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.0.0"
-    org          = "enterprise"
-    domain_zone  = "auth.enterprise.com"
-    domain_alias = "login"
-    cross_account_acm = {
-      enabled    = true
-      account_id = "987654321098"
-      region     = "us-east-1"
+    source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.1.3"
+
+    org = {
+      organization_name = "enterprise"
+      organization_unit = "identity"
+      environment_type  = "production"
+      environment_name  = "shared"
     }
+
+    domain_zone       = "auth.enterprise.com"
+    domain_alias      = "login"
+    cross_account_acm = true
+
     alerts = {
-      enabled     = true
-      sns_topic   = "arn:aws:sns:us-east-1:123456789012:certificate-alerts"
-      time_window = 30
+      enabled       = true
+      priority      = 2
+      sns_topic_arn = "arn:aws:sns:us-east-1:123456789012:certificate-alerts"
     }
   }
   ```
@@ -91,12 +103,13 @@ quickstart: |-
   1. Create a new Terragrunt configuration file (terragrunt.hcl)
   2. Configure the module source and version
   3. Set required variables:
-     - org: Your organization name
+     - org: Organization object with name, unit, environment type, and environment name
      - domain_zone: Base domain for authentication
      - domain_alias: Subdomain prefix for auth endpoint
-  4. Initialize Terragrunt: `terragrunt init`
-  5. Plan your changes: `terragrunt plan`
-  6. Apply the configuration: `terragrunt apply`
+  4. If you enable `cross_account_acm`, pass the `aws.cross_account` provider alias to the module caller.
+  5. Initialize Terragrunt: `terragrunt init`
+  6. Plan your changes: `terragrunt plan`
+  7. Apply the configuration: `terragrunt apply`
 
 include:
   - "docs/targets.md"
