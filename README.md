@@ -65,7 +65,7 @@ To use this module in your Terragrunt configuration:
 
 ```hcl
 terraform {
-  source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.1.3"
+  source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.2.1"
 }
 
 inputs = {
@@ -76,10 +76,12 @@ inputs = {
     environment_name  = "shared"
   }
 
-  is_hub                 = true
+  is_hub      = true
+  name_prefix = "user-pool"
+
+  # terragrunt.hcl also supports the grouped domain layout used by .boilerplate/inputs.yaml.
   domain_zone            = "auth.example.com"
   domain_alias           = "login"
-  name_prefix            = "user-pool"
   domain_certificate     = true
   domain_certificate_arn = ""
 
@@ -102,10 +104,11 @@ inputs = {
    - org: Organization object with name, unit, environment type, and environment name
    - domain_zone: Base domain for authentication
    - domain_alias: Subdomain prefix for auth endpoint
-4. If you enable `cross_account_acm`, pass the `aws.cross_account` provider alias to the module caller.
-5. Initialize Terragrunt: `terragrunt init`
-6. Plan your changes: `terragrunt plan`
-7. Apply the configuration: `terragrunt apply`
+4. For boilerplate-based Terragrunt consumers, keep domain values under `domain.zone`, `domain.alias`, `domain.certificate`, and `domain.certificate_arn` in `.boilerplate/inputs.yaml`; flat `domain_*` keys remain supported for backwards compatibility.
+5. If you enable `cross_account_acm` or `cross_account.enabled`, pass the `aws.cross_account` provider alias to the module caller or configure the generated provider settings in `.boilerplate/inputs.yaml`.
+6. Initialize Terragrunt: `terragrunt init`
+7. Plan your changes: `terragrunt plan`
+8. Apply the configuration: `terragrunt apply`
 
 
 ## Examples
@@ -113,7 +116,7 @@ inputs = {
 1. Basic User Pool Setup:
 ```hcl
 module "cognito_user_pool" {
-  source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.1.3"
+  source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.2.1"
 
   org = {
     organization_name = "mycompany"
@@ -130,7 +133,7 @@ module "cognito_user_pool" {
 2. Multi-Account Setup with Custom Certificate:
 ```hcl
 module "cognito_user_pool" {
-  source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.1.3"
+  source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.2.1"
 
   org = {
     organization_name = "enterprise"
@@ -165,6 +168,27 @@ Available targets:
   tag                                 Tag the current version
 
 ```
+## Terragrunt Boilerplate Inputs
+
+This repository includes a Terragrunt boilerplate under `.boilerplate/` for consumers that scaffold module usage.
+
+Key allocation rules:
+
+| Concern | Input source | Generated module input |
+|---------|--------------|------------------------|
+| Organization | `env-inputs.yaml` -> `org` | `org` |
+| Spoke | `spoke-inputs.yaml` -> `spoke` | `spoke_def` |
+| Tags | `*-tags.json` merged from global/env/region/spoke/local | `extra_tags` |
+| Cognito domain | `.boilerplate/inputs.yaml` -> `domain.zone`, `domain.alias`, `domain.certificate`, `domain.certificate_arn` | `domain_zone`, `domain_alias`, `domain_certificate`, `domain_certificate_arn` |
+| Cross-account ACM | `.boilerplate/inputs.yaml` -> `cross_account.enabled` or legacy `cross_account_acm` | `cross_account_acm` |
+| External ACM dependency | Scaffold-time `acm_enabled` and `acm_path` | `domain_certificate_arn` from `dependency.acm.outputs.acm_certificate_arn` |
+
+Notes:
+
+- Prefer the grouped `domain` object in `.boilerplate/inputs.yaml`; flat `domain_*` keys remain supported for backward compatibility.
+- `acm_enabled` and `acm_path` are boilerplate render-time settings, not Terraform module variables.
+- When `cross_account.enabled` is false, the generated cross-account provider file is disabled and removed by Terragrunt.
+- When `cross_account.enabled` is true, set `cross_account.region` and `cross_account.sts_role_arn` unless your inherited `global-inputs.yaml` provides `default.region` and `default.sts_role_arn`.
 ## Requirements
 
 | Name | Version |
@@ -206,7 +230,7 @@ Available targets:
 | <a name="input_domain_certificate"></a> [domain\_certificate](#input\_domain\_certificate) | Enable/Disable domain certificate for the user pool, defaults to true. | `bool` | `true` | no |
 | <a name="input_domain_certificate_arn"></a> [domain\_certificate\_arn](#input\_domain\_certificate\_arn) | The domain certificate ARN for the user pool, defaults to empty. | `string` | `""` | no |
 | <a name="input_domain_zone"></a> [domain\_zone](#input\_domain\_zone) | The domain zone for the user pool, defaults to empty. | `string` | `""` | no |
-| <a name="input_email_configuration"></a> [email\_configuration](#input\_email\_configuration) | Email configuration for the user pool, defaults to 'null'. | <pre>object({<br/>    default_method        = optional(string, true)<br/>    from                  = optional(string, null)<br/>    reply_to_address      = optional(string, null)<br/>    ses_configuration_set = optional(string, null)<br/>    ses_source_arn        = optional(string, null)<br/>  })</pre> | `null` | no |
+| <a name="input_email_configuration"></a> [email\_configuration](#input\_email\_configuration) | Email configuration for the user pool, defaults to 'null'. | <pre>object({<br/>    default_method        = optional(bool, true)<br/>    from                  = optional(string, null)<br/>    reply_to_address      = optional(string, null)<br/>    ses_configuration_set = optional(string, null)<br/>    ses_source_arn        = optional(string, null)<br/>  })</pre> | `null` | no |
 | <a name="input_enable_mfa"></a> [enable\_mfa](#input\_enable\_mfa) | Enable MFA for the user pool, defaults to false. | `bool` | `false` | no |
 | <a name="input_enable_mfa_soft_token"></a> [enable\_mfa\_soft\_token](#input\_enable\_mfa\_soft\_token) | Enable software token MFA for the user pool, defaults to false. | `bool` | `false` | no |
 | <a name="input_extra_tags"></a> [extra\_tags](#input\_extra\_tags) | Extra tags to add to the resources | `map(string)` | `{}` | no |
@@ -231,11 +255,11 @@ Available targets:
 
 | Name | Description |
 |------|-------------|
-| <a name="output_cognito_arn"></a> [cognito\_arn](#output\_cognito\_arn) | n/a |
-| <a name="output_cognito_custom_domain"></a> [cognito\_custom\_domain](#output\_cognito\_custom\_domain) | n/a |
-| <a name="output_cognito_domain"></a> [cognito\_domain](#output\_cognito\_domain) | n/a |
-| <a name="output_cognito_endpoint"></a> [cognito\_endpoint](#output\_cognito\_endpoint) | n/a |
-| <a name="output_cognito_id"></a> [cognito\_id](#output\_cognito\_id) | n/a |
+| <a name="output_cognito_arn"></a> [cognito\_arn](#output\_cognito\_arn) | ARN of the Cognito user pool. |
+| <a name="output_cognito_custom_domain"></a> [cognito\_custom\_domain](#output\_cognito\_custom\_domain) | CloudFront distribution details for the Cognito custom domain when configured. |
+| <a name="output_cognito_domain"></a> [cognito\_domain](#output\_cognito\_domain) | AWS-managed domain prefix for the Cognito user pool. |
+| <a name="output_cognito_endpoint"></a> [cognito\_endpoint](#output\_cognito\_endpoint) | Endpoint of the Cognito user pool. |
+| <a name="output_cognito_id"></a> [cognito\_id](#output\_cognito\_id) | ID of the Cognito user pool. |
 
 
 
@@ -268,7 +292,7 @@ Please use the [issue tracker](https://github.com/cloudopsworks/terraform-module
 
 ## Copyrights
 
-Copyright © 2024-2026 [Cloud Ops Works LLC](https://cloudops.works)
+Copyright © 2026-2026 [Cloud Ops Works LLC](https://cloudops.works)
 
 
 

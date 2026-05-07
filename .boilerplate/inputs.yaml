@@ -1,27 +1,99 @@
-# Module configuration for Terragrunt consumers of this module.
-# org, is_hub, spoke_def, and extra_tags are inherited by the generated boilerplate.
+# Module configuration
+# AWS Cognito User Pool setup deployment inputs for Terragrunt boilerplate consumers.
+# org, is_hub, spoke_def, and extra_tags are inherited by the generated terragrunt.hcl.
 
-# Optional override when you do not want the default user-pool-<system-name> naming.
-name: ""
-name_prefix: "user-pool"
+#name: ""                         # (Optional) Explicit Cognito user pool name. Leave empty to use name_prefix plus the generated system name. Default: ""
+name_prefix: "user-pool"           # (Optional) Prefix for the generated Cognito user pool name. Default: "user-pool"
 
-domain_zone: "auth.example.com"
-domain_alias: "login"
-domain_certificate: true
-domain_certificate_arn: ""
+# Preferred grouped domain layout consumed by .boilerplate/terragrunt.hcl.
+domain:
+  zone: "auth.example.com"         # (Optional) Base DNS zone for the Cognito custom domain. Example: "auth.example.com". Default: ""
+  alias: "login"                   # (Optional) Host label for the Cognito custom domain. Example: "login" -> "login.auth.example.com". Default: ""
+  certificate: true                 # (Optional) Enable ACM certificate usage for the custom domain. Default: true
+  certificate_arn: ""              # (Optional) Existing ACM certificate ARN. Leave empty to use the module ACM helper or dependency injection. Default: ""
 
-# Set to true only when the module caller passes the aws.cross_account provider alias.
-cross_account_acm: false
+# Backward-compatible flat keys remain supported by terragrunt.hcl when domain.* is omitted.
+#domain_zone: "auth.example.com"
+#domain_alias: "login"
+#domain_certificate: true
+#domain_certificate_arn: ""
 
+# User pool behavior.
+deletion_protection: true           # (Optional) Enable Cognito deletion protection. Default: true
+username_attributes:                # (Optional) Attributes allowed as sign-in aliases. Default: ["email"]
+  - email
+#password_policy:                   # (Optional) Password policy. Default: null/provider default
+#  minimum_length: 12
+#  require_lowercase: true
+#  require_numbers: true
+#  require_symbols: true
+#  require_uppercase: true
+#  temporary_password_validity_days: 7
+#recovery_mechanisms:               # (Optional) Account recovery priorities. Default: []
+#  - name: "verified_email"
+#    priority: 1
+#only_admin_create_user: true       # (Optional) Restrict user creation to administrators. Default: true
+
+# MFA and messaging.
+enable_mfa: false                   # (Optional) Require MFA for the user pool. Default: false
+enable_mfa_soft_token: false        # (Optional) Enable software-token MFA when MFA is enabled. Default: false
+#sms_configuration:                 # (Optional) Required by AWS when SMS MFA/messages are enabled. Default: null
+#  external_id: "cognito-sms"
+#  sns_caller_arn: "arn:aws:iam::123456789012:role/cognito-sms-role"
+#  sns_region: "us-east-1"
+#sms_authentication_message: "Your authentication code is {####}" # (Optional) SMS MFA message. Default shown
+#sms_verification_message: null     # (Optional) SMS verification message. Conflicts with verification_message_template in some AWS modes. Default: null
+#invite_message_template:           # (Optional) Admin-created user invite template. Default: module default
+#  email_message: "Your username is {username} and temporary password is {####}."
+#  email_subject: "Your temporary password"
+#  sms_message: "Your username is {username} and temporary password is {####}."
+#verification_message_template:     # (Optional) User verification template. Default: null/provider default
+#  confirm_with_link: false
+#  email_message: "Your verification code is {####}"
+#  email_message_by_link: "Please Click {##Click Here##} to verify your email address."
+#  email_subject: "Your verification code"
+#  email_subject_by_link: "Your verification link"
+#  sms_message: "Your verification code is {####}"
+
+# Optional Cognito schema, email, device, and resource server settings.
+#schema:                            # (Optional) Custom user attributes. Default: []
+#  - name: "tenant_id"
+#    attribute_data_type: "String"
+#    mutable: true
+#    required: false
+#    string_attribute_constraints:
+#      min_length: "1"
+#      max_length: "64"
+#email_configuration:               # (Optional) Email sending configuration. Default: null/provider default
+#  default_method: true             # true = COGNITO_DEFAULT, false = DEVELOPER
+#  from: null
+#  reply_to_address: null
+#  ses_configuration_set: null
+#  ses_source_arn: null
+#device_configuration:              # (Optional) Remembered-device configuration. Default: null
+#  challenge_required: false
+#  remember_on_prompt: false
+resource_servers: []                # (Optional) Cognito resource servers. Default: []
+#  - identifier: "https://api.example.com"
+#    name: "example-api"
+#    scopes:
+#      - scope_name: "read"
+#        scope_description: "Read access"
+
+# ACM helper alert metadata forwarded to terraform-module-aws-acm-certificate.
 alerts:
   enabled: false
   priority: 3
   sns_topic_arn: ""
 
-deletion_protection: true
-enable_mfa: false
-enable_mfa_soft_token: false
-username_attributes:
-  - email
+# Special case: scaffold an external ACM Terragrunt dependency and source domain_certificate_arn from it.
+#acm_enabled: false                 # (Optional scaffold-time setting) Render dependency "acm" and inject dependency.acm.outputs.acm_certificate_arn. Default: false
+#acm_path: "../acm"                 # (Optional scaffold-time setting) Relative Terragrunt path to the ACM module. Default: "../acm"
 
-resource_servers: []
+# Special case: cross-account provider settings used when cross-account ACM/Route53 handling is enabled.
+#cross_account_acm: false           # (Optional) Backward-compatible flag. terragrunt.hcl also derives this from cross_account.enabled. Default: false
+#cross_account:
+#  enabled: false                   # (Optional) Generate and use cross-account provider settings. Default: false
+#  alias: "cross_account"           # (Optional) AWS provider alias emitted into provider.l.tf. Default: "cross_account"
+#  region: "us-east-1"              # (Optional) Region for the generated cross-account provider. Defaults to global-inputs.yaml default.region.
+#  sts_role_arn: "arn:aws:iam::111122223333:role/TerragruntCrossAccountRole" # (Optional) Role assumed for cross-account Route53/ACM operations.

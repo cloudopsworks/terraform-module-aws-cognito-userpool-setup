@@ -1,5 +1,5 @@
 ##
-# (c) 2021-2025
+# (c) 2021-2026
 #     Cloud Ops Works LLC - https://cloudops.works/
 #     Find us on:
 #       GitHub: https://github.com/cloudopsworks
@@ -39,7 +39,7 @@ resource "aws_cognito_user_pool" "this" {
     for_each = var.email_configuration != null ? [var.email_configuration] : []
     content {
       email_sending_account  = email_configuration.value.default_method ? "COGNITO_DEFAULT" : "DEVELOPER"
-      from_email_address     = email_configuration.value.from_address
+      from_email_address     = email_configuration.value.from
       reply_to_email_address = email_configuration.value.reply_to_address
       configuration_set      = email_configuration.value.ses_configuration_set
       source_arn             = email_configuration.value.ses_source_arn
