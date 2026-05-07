@@ -1,5 +1,12 @@
 name: Terraform Module for AWS Cognito User Pool Setup
 #logo: logo/logo.jpg
+badges:
+  - name: Latest Release
+    image: https://img.shields.io/github/release/cloudopsworks/terraform-module-aws-cognito-userpool-setup.svg?style=for-the-badge
+    url: https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup/releases/latest
+  - name: Last Updated
+    image: https://img.shields.io/github/last-commit/cloudopsworks/terraform-module-aws-cognito-userpool-setup.svg?style=for-the-badge
+    url: https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup/commits
 
 license: "APACHE2"
 
@@ -11,108 +18,512 @@ copyrights:
 github_repo: cloudopsworks/terraform-module-aws-cognito-userpool-setup
 
 description: |-
-  AWS Cognito User Pool Module for setting up and managing user authentication and authorization.
-  This module provides comprehensive setup for Cognito User Pools including custom domains,
-  certificates, and client applications configuration with full support for multi-account deployments.
+  AWS Cognito User Pool module for building a reusable authentication foundation with
+  Cognito User Pools, custom hosted domains, optional ACM certificate automation,
+  MFA controls, message templates, custom attributes, and OAuth resource servers.
+  The module is designed for Cloud Ops Works Terragrunt scaffolding so platform
+  teams can publish repeatable identity deployments across hub, spoke, and
+  cross-account AWS environments.
 
 introduction: |-
-  This Terraform module creates and manages AWS Cognito User Pools with extended functionality for:
-  - Custom domain configuration with ACM certificate management
-  - Multiple client application support
-  - Cross-account certificate management
-  - Comprehensive tagging and organization support
-  - Alert configuration for certificate expiration
+  ## Overview
+
+  This module creates and manages an AWS Cognito User Pool and the surrounding
+  configuration commonly needed for application authentication platforms.
+
+  ### What it manages
+
+  1. **User pool lifecycle** with deterministic naming, deletion protection, tags, and
+     organization metadata inherited from the Cloud Ops Works boilerplate.
+  2. **Custom authentication domains** using `domain_alias` + `domain_zone`, either with
+     an existing ACM certificate ARN or with the bundled ACM helper module.
+  3. **Cross-account ACM/Route53 workflows** by wiring the generated Terragrunt
+     `aws.cross_account` provider alias when certificate validation records live in a
+     shared DNS or security account.
+  4. **Authentication policy controls** including username aliases, MFA, software-token
+     MFA, SMS configuration, account recovery priorities, password policy, device
+     remembering, and admin-created user invitation settings.
+  5. **Messaging and schema customization** through email/SMS verification templates,
+     SES-backed email configuration, and Cognito custom user attributes.
+  6. **OAuth resource servers** for API authorization scopes that should be attached to
+     the same user pool.
+
+  ### Naming behavior
+
+  The user pool name is resolved with the following precedence:
+
+  | Input | Result |
+  |-------|--------|
+  | `name` set | Uses the exact value of `name` |
+  | `name` empty | Uses `<name_prefix>-<system_name>` |
+
+  `system_name` is calculated by the provider boilerplate from organization, environment,
+  hub/spoke, and regional context. Use `name` only when a fixed Cognito name is required;
+  otherwise prefer `name_prefix` so generated names stay consistent across environments.
+
+  ### Domain behavior
+
+  A Cognito custom domain is created only when both `domain_alias` and `domain_zone` are
+  non-empty. The effective FQDN is `<domain_alias>.<domain_zone>`; for example,
+  `login` + `auth.example.com` creates `login.auth.example.com`.
+
+  | Certificate input | Behavior |
+  |-------------------|----------|
+  | `domain_certificate = true` and `domain_certificate_arn` set | Uses the supplied ACM certificate ARN |
+  | `domain_certificate = true` and `domain_certificate_arn` empty | Uses the bundled `terraform-module-aws-acm-certificate` helper output |
+  | `domain_certificate = false` | Sends no certificate ARN to the Cognito domain resource |
+
+  Cognito custom domains require certificates in the AWS region expected by Cognito for
+  the selected endpoint type. Plan certificate ownership and cross-account provider
+  aliases before applying production domains.
+
+  ### Safety notes
+
+  - Keep `deletion_protection = true` for production user pools unless an intentional
+    teardown is being planned.
+  - Enabling SMS MFA or SMS verification requires a valid IAM role in
+    `sms_configuration.sns_caller_arn`.
+  - `sms_verification_message` and `verification_message_template` can conflict for some
+    AWS provider modes; prefer one verification-message strategy per deployment.
+  - Use `cross_account.enabled` in `.boilerplate/inputs.yaml` when DNS validation or ACM
+    certificate operations are delegated to another AWS account.
 
 usage: |-
-  To use this module in your Terragrunt configuration:
+  ## Terragrunt scaffolding workflow
+
+  ```sh
+  # 1. Create and enter the target deployment directory
+  mkdir -p production/us-east-1/spoke-001/cognito-userpool
+  cd production/us-east-1/spoke-001/cognito-userpool
+
+  # 2. Scaffold this module (do NOT use --working-dir)
+  terragrunt scaffold github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup
+
+  # 3. Review and edit the generated inputs.yaml
+  vi inputs.yaml
+
+  # 4. Validate before applying
+  terragrunt init
+  terragrunt plan
+  ```
+
+  The scaffold command renders `inputs.yaml`, `terragrunt.hcl`, `local-tags.json`, and
+  optional provider/dependency blocks from the module's `.boilerplate/` directory. Pin the
+  generated Terraform source to a release tag such as `?ref=v1.2.2` before promoting to
+  shared or production environments.
+
+  ## Example generated `inputs.yaml`
+
+  ```yaml
+  # Module configuration
+  # AWS Cognito User Pool setup deployment inputs for Terragrunt boilerplate consumers.
+  # org, is_hub, spoke_def, and extra_tags are inherited by the generated terragrunt.hcl.
+
+  #name: ""                         # (Optional) Explicit Cognito user pool name. Leave empty to use name_prefix plus the generated system name. Default: ""
+  name_prefix: "user-pool"           # (Optional) Prefix for the generated Cognito user pool name. Default: "user-pool"
+
+  # Preferred grouped domain layout consumed by .boilerplate/terragrunt.hcl.
+  domain:
+    zone: "auth.example.com"         # (Optional) Base DNS zone for the Cognito custom domain. Example: "auth.example.com". Default: ""
+    alias: "login"                   # (Optional) Host label for the Cognito custom domain. Example: "login" -> "login.auth.example.com". Default: ""
+    certificate: true                 # (Optional) Enable ACM certificate usage for the custom domain. Default: true
+    certificate_arn: ""              # (Optional) Existing ACM certificate ARN. Leave empty to use the module ACM helper or dependency injection. Default: ""
+
+  # Backward-compatible flat keys remain supported by terragrunt.hcl when domain.* is omitted.
+  #domain_zone: "auth.example.com"    # (Optional) Legacy flat base DNS zone. Default: ""
+  #domain_alias: "login"              # (Optional) Legacy flat host label. Default: ""
+  #domain_certificate: true            # (Optional) Legacy flat ACM certificate toggle. Default: true
+  #domain_certificate_arn: ""         # (Optional) Legacy flat ACM certificate ARN. Default: ""
+
+  # User pool behavior.
+  deletion_protection: true           # (Optional) Enable Cognito deletion protection. Default: true
+  username_attributes:                # (Optional) Attributes allowed as sign-in aliases. Valid values include email, phone_number, preferred_username. Default: ["email"]
+    - email
+  #password_policy:                   # (Optional) Password policy. Default: null/provider default
+  #  minimum_length: 12               # (Required when password_policy is set) Minimum length accepted by Cognito.
+  #  require_lowercase: true          # (Required when password_policy is set) Require at least one lowercase character.
+  #  require_numbers: true            # (Required when password_policy is set) Require at least one number.
+  #  require_symbols: true            # (Required when password_policy is set) Require at least one symbol.
+  #  require_uppercase: true          # (Required when password_policy is set) Require at least one uppercase character.
+  #  temporary_password_validity_days: 7 # (Required when password_policy is set) Temporary password validity in days.
+  #recovery_mechanisms:               # (Optional) Account recovery priorities. Valid names include verified_email and verified_phone_number. Default: []
+  #  - name: "verified_email"         # (Required per mechanism) Recovery channel name.
+  #    priority: 1                    # (Required per mechanism) Unique priority where 1 is highest.
+  #only_admin_create_user: true       # (Optional) Restrict user creation to administrators. Default: true
+
+  # MFA and messaging.
+  enable_mfa: false                   # (Optional) Require MFA for the user pool. Default: false
+  enable_mfa_soft_token: false        # (Optional) Enable software-token MFA when MFA is enabled. Default: false
+  #sms_configuration:                 # (Optional) Required by AWS when SMS MFA/messages are enabled. Default: null
+  #  external_id: "cognito-sms"       # (Required when sms_configuration is set) External ID used by Cognito when assuming the SMS role.
+  #  sns_caller_arn: "arn:aws:iam::123456789012:role/cognito-sms-role" # (Required when sms_configuration is set) IAM role ARN Cognito uses to publish SMS.
+  #  sns_region: "us-east-1"          # (Optional) SNS region. Default: provider region
+  #sms_authentication_message: "Your authentication code is {####}" # (Optional) SMS MFA message. Use {####} as the code placeholder. Default shown
+  #sms_verification_message: null     # (Optional) SMS verification message. Conflicts with verification_message_template in some AWS modes. Default: null
+  #invite_message_template:           # (Optional) Admin-created user invite template. Default: module default
+  #  email_message: "Your username is {username} and temporary password is {####}." # (Optional) Email body. Supports {username} and {####} placeholders.
+  #  email_subject: "Your temporary password" # (Optional) Email subject.
+  #  sms_message: "Your username is {username} and temporary password is {####}." # (Optional) SMS body. Supports {username} and {####} placeholders.
+  #verification_message_template:     # (Optional) User verification template. Default: null/provider default
+  #  confirm_with_link: false         # (Optional) false = CONFIRM_WITH_CODE, true = CONFIRM_WITH_LINK. Default: false
+  #  email_message: "Your verification code is {####}" # (Optional) Code-based email body. Default shown
+  #  email_message_by_link: "Please Click {##Click Here##} to verify your email address." # (Optional) Link-based email body. Default shown
+  #  email_subject: "Your verification code" # (Optional) Code-based email subject. Default shown
+  #  email_subject_by_link: "Your verification link" # (Optional) Link-based email subject. Default shown
+  #  sms_message: "Your verification code is {####}" # (Optional) SMS verification body. Default shown
+
+  # Optional Cognito schema, email, device, and resource server settings.
+  #schema:                            # (Optional) Custom user attributes. Attribute names cannot be changed after creation. Default: []
+  #  - name: "tenant_id"              # (Required per schema attribute) Custom attribute name.
+  #    attribute_data_type: "String"  # (Required per schema attribute) Valid values include String, Number, Boolean, DateTime.
+  #    mutable: true                  # (Optional) Whether users/admins can update the attribute. Default: true
+  #    required: false                # (Optional) Whether the attribute is required at sign-up. Default: false
+  #    developer_only_attribute: false # (Optional) Restrict updates to admins/developers. Default: false
+  #    string_attribute_constraints:  # (Optional) String length constraints.
+  #      min_length: "1"              # (Optional) Minimum string length.
+  #      max_length: "64"             # (Optional) Maximum string length.
+  #email_configuration:               # (Optional) Email sending configuration. Default: null/provider default
+  #  default_method: true             # (Optional) true = COGNITO_DEFAULT, false = DEVELOPER. Default: true
+  #  from: null                       # (Optional) From address for DEVELOPER mode. Default: null
+  #  reply_to_address: null           # (Optional) Reply-to address. Default: null
+  #  ses_configuration_set: null       # (Optional) SES configuration set name. Default: null
+  #  ses_source_arn: null              # (Optional) Verified SES identity ARN for DEVELOPER mode. Default: null
+  #device_configuration:              # (Optional) Remembered-device configuration. Default: null
+  #  challenge_required: false        # (Optional) Require a challenge for new devices. Default: false
+  #  remember_on_prompt: false        # (Optional) Remember devices only when the user opts in. Default: false
+  resource_servers: []                # (Optional) Cognito resource servers. Default: []
+  #  - identifier: "https://api.example.com" # (Required per resource server) Globally unique resource server identifier.
+  #    name: "example-api"            # (Required per resource server) Cognito resource server name.
+  #    scopes:                        # (Required per resource server) OAuth scopes exposed by this API.
+  #      - name: "read"               # (Required per scope) Scope name used in access tokens.
+  #        description: "Read access" # (Required per scope) Human-readable scope description.
+
+  # ACM helper alert metadata forwarded to terraform-module-aws-acm-certificate.
+  alerts:
+    enabled: false                    # (Optional) Enable ACM certificate alerting metadata. Default: false
+    priority: 3                       # (Optional) Alert priority used by downstream alert tooling. Default: 3
+    sns_topic_arn: ""                 # (Optional) SNS topic ARN for certificate alerts. Default: ""
+
+  # Special case: scaffold an external ACM Terragrunt dependency and source domain_certificate_arn from it.
+  #acm_enabled: false                 # (Optional scaffold-time setting) Render dependency "acm" and inject dependency.acm.outputs.acm_certificate_arn. Default: false
+  #acm_path: "../acm"                 # (Optional scaffold-time setting) Relative Terragrunt path to the ACM module. Default: "../acm"
+
+  # Special case: cross-account provider settings used when cross-account ACM/Route53 handling is enabled.
+  #cross_account_acm: false           # (Optional) Backward-compatible flag. terragrunt.hcl also derives this from cross_account.enabled. Default: false
+  #cross_account:
+  #  enabled: false                   # (Optional) Generate and use cross-account provider settings. Default: false
+  #  alias: "cross_account"           # (Optional) AWS provider alias emitted into provider.l.tf. Default: "cross_account"
+  #  region: "us-east-1"              # (Optional) Region for the generated cross-account provider. Defaults to global-inputs.yaml default.region.
+  #  sts_role_arn: "arn:aws:iam::111122223333:role/TerragruntCrossAccountRole" # (Optional) Role assumed for cross-account Route53/ACM operations.
+  ```
+
+  ## Generated `terragrunt.hcl`
+
+  This is the shape rendered by `.boilerplate/terragrunt.hcl` after scaffolding. The
+  source should be pinned to the release you have approved for the environment.
+
+  ```hcl
+  locals {
+    local_vars  = yamldecode(file("./inputs.yaml"))
+    spoke_vars  = yamldecode(file(find_in_parent_folders("spoke-inputs.yaml")))
+    region_vars = yamldecode(file(find_in_parent_folders("region-inputs.yaml")))
+    env_vars    = yamldecode(file(find_in_parent_folders("env-inputs.yaml")))
+    global_vars = yamldecode(file(find_in_parent_folders("global-inputs.yaml")))
+
+    local_tags  = jsondecode(file("./local-tags.json"))
+    spoke_tags  = jsondecode(file(find_in_parent_folders("spoke-tags.json")))
+    region_tags = jsondecode(file(find_in_parent_folders("region-tags.json")))
+    env_tags    = jsondecode(file(find_in_parent_folders("env-tags.json")))
+    global_tags = jsondecode(file(find_in_parent_folders("global-tags.json")))
+
+    cross_account              = try(local.local_vars.cross_account.enabled, local.local_vars.cross_account_acm, false)
+    cross_account_alias        = try(local.local_vars.cross_account.alias, "cross_account")
+    cross_account_region       = try(local.local_vars.cross_account.region, local.global_vars.default.region, "us-east-1")
+    cross_account_sts_role_arn = try(local.local_vars.cross_account.sts_role_arn, local.global_vars.default.sts_role_arn, "")
+
+    tags = merge(
+      local.global_tags,
+      local.env_tags,
+      local.region_tags,
+      local.spoke_tags,
+      local.local_tags
+    )
+  }
+
+  dependency "acm" {
+    config_path                             = "../acm"
+    mock_outputs_allowed_terraform_commands = ["validate", "destroy"]
+    mock_outputs = {
+      acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+    }
+  }
+
+  generate "provider_l" {
+    path        = "provider.l.tf"
+    disable     = !local.cross_account
+    if_exists   = "overwrite_terragrunt"
+    if_disabled = "remove_terragrunt"
+    contents    = <<EOF_PROVIDER
+  provider "aws" {
+    alias  = "${local.cross_account_alias}"
+    region = "${local.cross_account_region}"
+
+    assume_role {
+      role_arn     = "${local.cross_account_sts_role_arn}"
+      session_name = "terragrunt"
+    }
+  }
+  EOF_PROVIDER
+  }
+
+  include "root" {
+    path = find_in_parent_folders("root.hcl")
+  }
+
+  terraform {
+    source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.2.2"
+  }
+
+  inputs = {
+    is_hub                 = false
+    org                    = local.env_vars.org
+    spoke_def              = local.spoke_vars.spoke
+    name                   = try(local.local_vars.name, "")
+    name_prefix            = try(local.local_vars.name_prefix, "user-pool")
+    deletion_protection    = try(local.local_vars.deletion_protection, true)
+    username_attributes    = try(local.local_vars.username_attributes, ["email"])
+    password_policy        = try(local.local_vars.password_policy, null)
+    recovery_mechanisms    = try(local.local_vars.recovery_mechanisms, [])
+    only_admin_create_user = try(local.local_vars.only_admin_create_user, true)
+
+    domain_zone            = try(local.local_vars.domain.zone, local.local_vars.domain_zone, "")
+    domain_alias           = try(local.local_vars.domain.alias, local.local_vars.domain_alias, "")
+    domain_certificate     = try(local.local_vars.domain.certificate, local.local_vars.domain_certificate, true)
+    domain_certificate_arn = dependency.acm.outputs.acm_certificate_arn
+
+    enable_mfa                 = try(local.local_vars.enable_mfa, false)
+    enable_mfa_soft_token      = try(local.local_vars.enable_mfa_soft_token, false)
+    sms_configuration          = try(local.local_vars.sms_configuration, null)
+    sms_authentication_message = try(local.local_vars.sms_authentication_message, "Your authentication code is {####}")
+    sms_verification_message   = try(local.local_vars.sms_verification_message, null)
+    invite_message_template    = try(local.local_vars.invite_message_template, {
+      email_message = "Your username is {username} and temporary password is {####}."
+      email_subject = "Your temporary password"
+      sms_message   = "Your username is {username} and temporary password is {####}."
+    })
+    verification_message_template = try(local.local_vars.verification_message_template, null)
+
+    schema              = try(local.local_vars.schema, [])
+    email_configuration = try(local.local_vars.email_configuration, null)
+    device_configuration = try(local.local_vars.device_configuration, null)
+    resource_servers    = try(local.local_vars.resource_servers, [])
+    alerts              = try(local.local_vars.alerts, {})
+
+    cross_account_acm = local.cross_account
+    extra_tags        = local.tags
+  }
+  ```
+
+  ## Input model
+
+  ### Inherited platform inputs
+
+  | Variable | Type | Required | Description |
+  |----------|------|----------|-------------|
+  | `org.organization_name` | `string` | yes | Organization name loaded from `env-inputs.yaml` and used in tags/names. |
+  | `org.organization_unit` | `string` | yes | Organization unit loaded from `env-inputs.yaml`. |
+  | `org.environment_type` | `string` | yes | Environment type such as `production`, `staging`, or `development`. |
+  | `org.environment_name` | `string` | yes | Environment name such as `shared`, `prod`, or `dev`. |
+  | `is_hub` | `bool` | no | Hub/spoke deployment marker rendered by the scaffold. |
+  | `spoke_def` | `string` | no | Three-digit spoke identifier loaded from `spoke-inputs.yaml`. Default: `"001"`. |
+  | `extra_tags` | `map(string)` | no | Merge of global/env/region/spoke/local tag JSON files. |
+
+  ### Cognito user pool inputs
+
+  | Variable | Type | Required | Description |
+  |----------|------|----------|-------------|
+  | `name` | `string` | no | Fixed Cognito user pool name. Default: `""`. |
+  | `name_prefix` | `string` | no | Prefix used when `name` is empty. Default: `"user-pool"`. |
+  | `deletion_protection` | `bool` | no | Enables Cognito deletion protection. Default: `true`. |
+  | `username_attributes` | `list(string)` | no | Username alias attributes. Common values: `email`, `phone_number`, `preferred_username`. Default: `["email"]`. |
+  | `password_policy` | `object` | no | Password requirements. Default: `null` for provider defaults. |
+  | `recovery_mechanisms` | `list(object)` | no | Account recovery channels and priorities. Default: `[]`. |
+  | `only_admin_create_user` | `bool` | no | Restricts user creation to administrators. Default: `true`. |
+  | `schema` | `list(object)` | no | Cognito custom attributes. Default: `[]`. |
+  | `device_configuration` | `object` | no | Remembered-device behavior. Default: `null`. |
+
+  ### Domain, certificate, and cross-account inputs
+
+  | Variable | Type | Required | Description |
+  |----------|------|----------|-------------|
+  | `domain.zone` / `domain_zone` | `string` | no | Base DNS zone for the custom domain. Default: `""`. |
+  | `domain.alias` / `domain_alias` | `string` | no | Host label for the custom domain. Default: `""`. |
+  | `domain.certificate` / `domain_certificate` | `bool` | no | Whether to attach/use an ACM certificate. Default: `true`. |
+  | `domain.certificate_arn` / `domain_certificate_arn` | `string` | no | Existing ACM certificate ARN. Default: `""`. |
+  | `cross_account.enabled` / `cross_account_acm` | `bool` | no | Enables generated `aws.cross_account` provider usage. Default: `false`. |
+  | `cross_account.alias` | `string` | no | Provider alias to generate. Default: `"cross_account"`. |
+  | `cross_account.region` | `string` | no | Region for the generated cross-account provider. Default: global default or `us-east-1`. |
+  | `cross_account.sts_role_arn` | `string` | no | Role ARN assumed for cross-account ACM/Route53 work. |
+  | `alerts` | `object` | no | ACM helper alert metadata: `enabled`, `priority`, `sns_topic_arn`. |
+  | `acm_enabled` | `bool` | no | Scaffold-time setting that renders a Terragrunt `dependency "acm"` block. |
+  | `acm_path` | `string` | no | Scaffold-time path for the external ACM dependency. Default: `"../acm"`. |
+
+  ### Authentication, messaging, and API inputs
+
+  | Variable | Type | Required | Description |
+  |----------|------|----------|-------------|
+  | `enable_mfa` | `bool` | no | Sets Cognito MFA configuration to `ON` when true. Default: `false`. |
+  | `enable_mfa_soft_token` | `bool` | no | Enables software-token MFA when MFA is enabled. Default: `false`. |
+  | `sms_configuration` | `object` | no | SMS IAM role and region settings. Required by AWS for SMS MFA/messages. |
+  | `sms_authentication_message` | `string` | no | SMS MFA challenge message. Default: `"Your authentication code is {####}"`. |
+  | `sms_verification_message` | `string` | no | SMS verification message. Default: `null`. |
+  | `invite_message_template` | `object` | no | Admin-created user invitation messages. |
+  | `verification_message_template` | `object` | no | User verification messages and link/code mode. Default: `null`. |
+  | `email_configuration` | `object` | no | Cognito default email or SES-backed email settings. Default: `null`. |
+  | `resource_servers` | `list(object)` | no | OAuth resource servers and scopes. Default: `[]`. |
+
+examples: |-
+  ## Minimal user pool with a custom domain
 
   ```hcl
   terraform {
-    source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.2.1"
+    source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.2.2"
   }
 
   inputs = {
     org = {
-      organization_name = "myorg"
+      organization_name = "acme"
       organization_unit = "platform"
       environment_type  = "production"
       environment_name  = "shared"
     }
 
     is_hub      = true
-    name_prefix = "user-pool"
+    name_prefix = "customer-auth"
 
-    # terragrunt.hcl also supports the grouped domain layout used by .boilerplate/inputs.yaml.
-    domain_zone            = "auth.example.com"
-    domain_alias           = "login"
-    domain_certificate     = true
-    domain_certificate_arn = ""
-
-    # Set to true only when the caller also passes the aws.cross_account provider alias.
-    cross_account_acm = false
-
-    alerts = {
-      enabled       = true
-      priority      = 3
-      sns_topic_arn = "arn:aws:sns:us-east-1:123456789012:cognito-certificate-alerts"
-    }
+    domain_zone  = "auth.example.com"
+    domain_alias = "login"
   }
   ```
 
-examples: |-
-  1. Basic User Pool Setup:
+  ## Production pool with MFA, custom attributes, and resource scopes
+
   ```hcl
-  module "cognito_user_pool" {
-    source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.2.1"
-
+  inputs = {
     org = {
-      organization_name = "mycompany"
-      organization_unit = "platform"
-      environment_type  = "production"
-      environment_name  = "shared"
-    }
-
-    domain_zone  = "auth.mycompany.com"
-    domain_alias = "signin"
-  }
-  ```
-
-  2. Multi-Account Setup with Custom Certificate:
-  ```hcl
-  module "cognito_user_pool" {
-    source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.2.1"
-
-    org = {
-      organization_name = "enterprise"
+      organization_name = "acme"
       organization_unit = "identity"
       environment_type  = "production"
       environment_name  = "shared"
     }
 
-    domain_zone       = "auth.enterprise.com"
-    domain_alias      = "login"
-    cross_account_acm = true
+    name_prefix            = "identity"
+    deletion_protection    = true
+    username_attributes    = ["email"]
+    only_admin_create_user = true
 
-    alerts = {
-      enabled       = true
-      priority      = 2
-      sns_topic_arn = "arn:aws:sns:us-east-1:123456789012:certificate-alerts"
+    password_policy = {
+      minimum_length                   = 14
+      require_lowercase                = true
+      require_numbers                  = true
+      require_symbols                  = true
+      require_uppercase                = true
+      temporary_password_validity_days = 7
     }
+
+    enable_mfa            = true
+    enable_mfa_soft_token = true
+
+    recovery_mechanisms = [
+      {
+        name     = "verified_email"
+        priority = 1
+      }
+    ]
+
+    schema = [
+      {
+        name                = "tenant_id"
+        attribute_data_type = "String"
+        mutable             = true
+        required            = false
+        string_attribute_constraints = {
+          min_length = "1"
+          max_length = "64"
+        }
+      }
+    ]
+
+    resource_servers = [
+      {
+        identifier = "https://api.example.com"
+        name       = "example-api"
+        scopes = [
+          {
+            name        = "read"
+            description = "Read access to Example API"
+          },
+          {
+            name        = "write"
+            description = "Write access to Example API"
+          }
+        ]
+      }
+    ]
   }
   ```
 
+  ## Cross-account certificate validation with external ACM dependency
+
+  ```yaml
+  # inputs.yaml rendered by Terragrunt scaffold
+  domain:
+    zone: "auth.example.com"
+    alias: "login"
+    certificate: true
+    certificate_arn: ""
+
+  acm_enabled: true
+  acm_path: "../acm-certificate"
+
+  cross_account:
+    enabled: true
+    alias: "cross_account"
+    region: "us-east-1"
+    sts_role_arn: "arn:aws:iam::111122223333:role/TerragruntDnsValidationRole"
+
+  alerts:
+    enabled: true
+    priority: 2
+    sns_topic_arn: "arn:aws:sns:us-east-1:123456789012:cognito-certificate-alerts"
+  ```
+
 quickstart: |-
-  1. Create a new Terragrunt configuration file (terragrunt.hcl)
-  2. Configure the module source and version
-  3. Set required variables:
-     - org: Organization object with name, unit, environment type, and environment name
-     - domain_zone: Base domain for authentication
-     - domain_alias: Subdomain prefix for auth endpoint
-  4. For boilerplate-based Terragrunt consumers, keep domain values under `domain.zone`, `domain.alias`, `domain.certificate`, and `domain.certificate_arn` in `.boilerplate/inputs.yaml`; flat `domain_*` keys remain supported for backwards compatibility.
-  5. If you enable `cross_account_acm` or `cross_account.enabled`, pass the `aws.cross_account` provider alias to the module caller or configure the generated provider settings in `.boilerplate/inputs.yaml`.
-  6. Initialize Terragrunt: `terragrunt init`
-  7. Plan your changes: `terragrunt plan`
-  8. Apply the configuration: `terragrunt apply`
+  1. Confirm AWS credentials can create Cognito User Pools, Cognito domains, and any
+     required ACM/Route53 records for the target account.
+  2. If using a custom domain, decide whether the certificate is supplied directly,
+     created by the bundled ACM helper, or injected from an external Terragrunt ACM
+     dependency.
+  3. Scaffold a Terragrunt deployment directory with `terragrunt scaffold
+     github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup`.
+  4. Fill in `inputs.yaml`, preferring the grouped `domain` and `cross_account` layouts.
+  5. Pin `terraform.source` to an approved release tag before promotion.
+  6. Run:
+
+     ```sh
+     terragrunt init
+     terragrunt validate
+     terragrunt plan
+     terragrunt apply
+     ```
+
+  7. After apply, retrieve the user pool identifiers:
+
+     ```sh
+     terragrunt output cognito_id
+     terragrunt output cognito_arn
+     terragrunt output cognito_custom_domain
+     ```
 
 include:
   - "docs/targets.md"

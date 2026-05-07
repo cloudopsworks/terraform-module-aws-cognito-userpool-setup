@@ -9,13 +9,13 @@
 
 # Establish this is a HUB or spoke configuration
 variable "is_hub" {
-  description = "Is this a hub or spoke configuration?"
+  description = "Whether this deployment represents a hub environment instead of a spoke environment."
   type        = bool
   default     = false
 }
 
 variable "spoke_def" {
-  description = "Spoke ID Number, must be a 3 digit number"
+  description = "Three-digit spoke identifier used by the Cloud Ops Works naming and tagging convention."
   type        = string
   default     = "001"
   validation {
@@ -25,7 +25,7 @@ variable "spoke_def" {
 }
 
 variable "org" {
-  description = "Organization details"
+  description = "Organization and environment metadata loaded from Cloud Ops Works env-inputs.yaml."
   type = object({
     organization_name = string
     organization_unit = string
@@ -35,7 +35,7 @@ variable "org" {
 }
 
 variable "extra_tags" {
-  description = "Extra tags to add to the resources"
+  description = "Additional tags merged into all taggable resources."
   type        = map(string)
   default     = {}
 }

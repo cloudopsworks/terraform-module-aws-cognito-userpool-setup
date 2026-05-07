@@ -8,26 +8,26 @@
 #
 
 variable "name" {
-  description = "The name of the user pool."
+  description = "Explicit Cognito user pool name. Leave empty to derive the name from name_prefix and the generated system name."
   type        = string
   default     = ""
   nullable    = false
 }
 
 variable "name_prefix" {
-  description = "The prefix of the user pool."
+  description = "Prefix used for the generated Cognito user pool name when name is empty."
   type        = string
   default     = "user-pool"
   nullable    = false
 }
 
 variable "deletion_protection" {
-  description = "Set to true to enable deletion protection on the user pool, defaults to true."
+  description = "Set to true to enable Cognito deletion protection on the user pool. Defaults to true."
   type        = bool
   default     = true
 }
 variable "password_policy" {
-  description = "Password policy for the user pool"
+  description = "Password policy for the Cognito user pool. Null uses AWS provider defaults."
   type = object({
     minimum_length                   = number
     require_lowercase                = bool
@@ -40,21 +40,21 @@ variable "password_policy" {
 }
 
 variable "enable_mfa" {
-  description = "Enable MFA for the user pool, defaults to false."
+  description = "Enable required MFA for the Cognito user pool. Defaults to false."
   type        = bool
   default     = false
   nullable    = false
 }
 
 variable "enable_mfa_soft_token" {
-  description = "Enable software token MFA for the user pool, defaults to false."
+  description = "Enable software-token MFA when MFA is enabled. Defaults to false."
   type        = bool
   default     = false
   nullable    = false
 }
 
 variable "sms_configuration" {
-  description = "SMS configuration for the user pool, defaults to 'null', required if MFA is enabled."
+  description = "SMS IAM role and region configuration for Cognito SMS messages. Required when SMS MFA or SMS verification is enabled."
   type = object({
     external_id    = string
     sns_caller_arn = string
@@ -64,27 +64,27 @@ variable "sms_configuration" {
 }
 
 variable "username_attributes" {
-  description = "The attributes to be used as the username for the user pool, defaults to 'email'."
+  description = "Attributes that can be used as username aliases for the user pool. Defaults to email."
   type        = list(string)
   default     = ["email"]
   nullable    = false
 }
 
 variable "sms_authentication_message" {
-  description = "The SMS authentication message for the user pool, defaults to 'Your authentication code is {####}'."
+  description = "SMS MFA challenge message. Use {####} as the verification code placeholder."
   type        = string
   default     = "Your authentication code is {####}"
   nullable    = false
 }
 
 variable "sms_verification_message" {
-  description = "The SMS verification message for the user pool, defaults to null, can conflict with 'verification_message_template'."
+  description = "SMS verification message. Defaults to null and can conflict with verification_message_template in some AWS provider modes."
   type        = string
   default     = null
 }
 
 variable "recovery_mechanisms" {
-  description = "The recovery mechanisms for the user pool, defaults to empty list."
+  description = "Account recovery mechanisms and priorities for the user pool. Defaults to an empty list."
   type = list(object({
     name     = string
     priority = number
@@ -94,14 +94,14 @@ variable "recovery_mechanisms" {
 }
 
 variable "only_admin_create_user" {
-  description = "Set to true to only allow admins to create users, defaults to true."
+  description = "Set to true to allow only administrators to create users. Defaults to true."
   type        = bool
   default     = true
   nullable    = false
 }
 
 variable "invite_message_template" {
-  description = "The invite message template for the user pool, defaults to null."
+  description = "Invitation message template used when administrators create users."
   type = object({
     email_message = optional(string, "Your username is {username} and temporary password is {####}.")
     email_subject = optional(string, "Your temporary password")
@@ -116,7 +116,7 @@ variable "invite_message_template" {
 }
 
 variable "verification_message_template" {
-  description = "The verification message template for the user pool, defaults to null, can conflict with 'sms_verification_message'."
+  description = "Verification message template for code or link based verification. Defaults to null and can conflict with sms_verification_message in some AWS provider modes."
   type = object({
     confirm_with_link     = optional(bool, false)
     email_message         = optional(string, "Your verification code is {####}")
@@ -129,7 +129,7 @@ variable "verification_message_template" {
 }
 
 variable "schema" {
-  description = "The schema for the user pool, defaults to empty list."
+  description = "Custom Cognito user attribute schema definitions. Defaults to an empty list."
   type = list(object({
     attribute_data_type      = string
     developer_only_attribute = optional(bool, false)
@@ -150,7 +150,7 @@ variable "schema" {
 }
 
 variable "email_configuration" {
-  description = "Email configuration for the user pool, defaults to 'null'."
+  description = "Email sending configuration for Cognito default email or SES developer mode. Defaults to null."
   type = object({
     default_method        = optional(bool, true)
     from                  = optional(string, null)
@@ -162,7 +162,7 @@ variable "email_configuration" {
 }
 
 variable "device_configuration" {
-  description = "Device configuration for the user pool, defaults to 'null'."
+  description = "Remembered-device challenge and prompt behavior for the user pool. Defaults to null."
   type = object({
     challenge_required = optional(bool, false)
     remember_on_prompt = optional(bool, false)
@@ -171,7 +171,7 @@ variable "device_configuration" {
 }
 
 variable "resource_servers" {
-  description = "Resource servers for the user pool, defaults to empty list."
+  description = "OAuth resource servers and scopes exposed by the user pool. Defaults to an empty list."
   type        = any
   default     = []
   nullable    = false
