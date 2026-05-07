@@ -6,7 +6,7 @@ license: "APACHE2"
 copyrights:
   - name: "Cloud Ops Works LLC"
     url: "https://cloudops.works"
-    year: "2024"
+    year: "2026"
 
 github_repo: cloudopsworks/terraform-module-aws-cognito-userpool-setup
 
@@ -28,7 +28,7 @@ usage: |-
 
   ```hcl
   terraform {
-    source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.1.3"
+    source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.2.1"
   }
 
   inputs = {
@@ -39,10 +39,12 @@ usage: |-
       environment_name  = "shared"
     }
 
-    is_hub                 = true
+    is_hub      = true
+    name_prefix = "user-pool"
+
+    # terragrunt.hcl also supports the grouped domain layout used by .boilerplate/inputs.yaml.
     domain_zone            = "auth.example.com"
     domain_alias           = "login"
-    name_prefix            = "user-pool"
     domain_certificate     = true
     domain_certificate_arn = ""
 
@@ -61,7 +63,7 @@ examples: |-
   1. Basic User Pool Setup:
   ```hcl
   module "cognito_user_pool" {
-    source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.1.3"
+    source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.2.1"
 
     org = {
       organization_name = "mycompany"
@@ -78,7 +80,7 @@ examples: |-
   2. Multi-Account Setup with Custom Certificate:
   ```hcl
   module "cognito_user_pool" {
-    source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.1.3"
+    source = "git::https://github.com/cloudopsworks/terraform-module-aws-cognito-userpool-setup.git?ref=v1.2.1"
 
     org = {
       organization_name = "enterprise"
@@ -106,13 +108,15 @@ quickstart: |-
      - org: Organization object with name, unit, environment type, and environment name
      - domain_zone: Base domain for authentication
      - domain_alias: Subdomain prefix for auth endpoint
-  4. If you enable `cross_account_acm`, pass the `aws.cross_account` provider alias to the module caller.
-  5. Initialize Terragrunt: `terragrunt init`
-  6. Plan your changes: `terragrunt plan`
-  7. Apply the configuration: `terragrunt apply`
+  4. For boilerplate-based Terragrunt consumers, keep domain values under `domain.zone`, `domain.alias`, `domain.certificate`, and `domain.certificate_arn` in `.boilerplate/inputs.yaml`; flat `domain_*` keys remain supported for backwards compatibility.
+  5. If you enable `cross_account_acm` or `cross_account.enabled`, pass the `aws.cross_account` provider alias to the module caller or configure the generated provider settings in `.boilerplate/inputs.yaml`.
+  6. Initialize Terragrunt: `terragrunt init`
+  7. Plan your changes: `terragrunt plan`
+  8. Apply the configuration: `terragrunt apply`
 
 include:
   - "docs/targets.md"
+  - "docs/boilerplate.md"
   - "docs/terraform.md"
 
 contributors:

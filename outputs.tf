@@ -1,5 +1,5 @@
 ##
-# (c) 2021-2025
+# (c) 2021-2026
 #     Cloud Ops Works LLC - https://cloudops.works/
 #     Find us on:
 #       GitHub: https://github.com/cloudopsworks
@@ -8,22 +8,27 @@
 #
 
 output "cognito_id" {
-  value = aws_cognito_user_pool.this.id
+  description = "ID of the Cognito user pool."
+  value       = aws_cognito_user_pool.this.id
 }
 
 output "cognito_arn" {
-  value = aws_cognito_user_pool.this.arn
+  description = "ARN of the Cognito user pool."
+  value       = aws_cognito_user_pool.this.arn
 }
 
 output "cognito_endpoint" {
-  value = aws_cognito_user_pool.this.endpoint
+  description = "Endpoint of the Cognito user pool."
+  value       = aws_cognito_user_pool.this.endpoint
 }
 
 output "cognito_domain" {
-  value = aws_cognito_user_pool.this.domain
+  description = "AWS-managed domain prefix for the Cognito user pool."
+  value       = aws_cognito_user_pool.this.domain
 }
 
 output "cognito_custom_domain" {
+  description = "CloudFront distribution details for the Cognito custom domain when configured."
   value = var.domain_alias == "" || var.domain_zone == "" ? {} : {
     cloudfront_distribution = aws_cognito_user_pool_domain.this[0].cloudfront_distribution
     cloudfront_arn          = aws_cognito_user_pool_domain.this[0].cloudfront_distribution_arn

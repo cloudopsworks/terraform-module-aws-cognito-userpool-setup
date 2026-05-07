@@ -39,7 +39,7 @@
 | <a name="input_domain_certificate"></a> [domain\_certificate](#input\_domain\_certificate) | Enable/Disable domain certificate for the user pool, defaults to true. | `bool` | `true` | no |
 | <a name="input_domain_certificate_arn"></a> [domain\_certificate\_arn](#input\_domain\_certificate\_arn) | The domain certificate ARN for the user pool, defaults to empty. | `string` | `""` | no |
 | <a name="input_domain_zone"></a> [domain\_zone](#input\_domain\_zone) | The domain zone for the user pool, defaults to empty. | `string` | `""` | no |
-| <a name="input_email_configuration"></a> [email\_configuration](#input\_email\_configuration) | Email configuration for the user pool, defaults to 'null'. | <pre>object({<br/>    default_method        = optional(string, true)<br/>    from                  = optional(string, null)<br/>    reply_to_address      = optional(string, null)<br/>    ses_configuration_set = optional(string, null)<br/>    ses_source_arn        = optional(string, null)<br/>  })</pre> | `null` | no |
+| <a name="input_email_configuration"></a> [email\_configuration](#input\_email\_configuration) | Email configuration for the user pool, defaults to 'null'. | <pre>object({<br/>    default_method        = optional(bool, true)<br/>    from                  = optional(string, null)<br/>    reply_to_address      = optional(string, null)<br/>    ses_configuration_set = optional(string, null)<br/>    ses_source_arn        = optional(string, null)<br/>  })</pre> | `null` | no |
 | <a name="input_enable_mfa"></a> [enable\_mfa](#input\_enable\_mfa) | Enable MFA for the user pool, defaults to false. | `bool` | `false` | no |
 | <a name="input_enable_mfa_soft_token"></a> [enable\_mfa\_soft\_token](#input\_enable\_mfa\_soft\_token) | Enable software token MFA for the user pool, defaults to false. | `bool` | `false` | no |
 | <a name="input_extra_tags"></a> [extra\_tags](#input\_extra\_tags) | Extra tags to add to the resources | `map(string)` | `{}` | no |
@@ -64,8 +64,8 @@
 
 | Name | Description |
 |------|-------------|
-| <a name="output_cognito_arn"></a> [cognito\_arn](#output\_cognito\_arn) | n/a |
-| <a name="output_cognito_custom_domain"></a> [cognito\_custom\_domain](#output\_cognito\_custom\_domain) | n/a |
-| <a name="output_cognito_domain"></a> [cognito\_domain](#output\_cognito\_domain) | n/a |
-| <a name="output_cognito_endpoint"></a> [cognito\_endpoint](#output\_cognito\_endpoint) | n/a |
-| <a name="output_cognito_id"></a> [cognito\_id](#output\_cognito\_id) | n/a |
+| <a name="output_cognito_arn"></a> [cognito\_arn](#output\_cognito\_arn) | ARN of the Cognito user pool. |
+| <a name="output_cognito_custom_domain"></a> [cognito\_custom\_domain](#output\_cognito\_custom\_domain) | CloudFront distribution details for the Cognito custom domain when configured. |
+| <a name="output_cognito_domain"></a> [cognito\_domain](#output\_cognito\_domain) | AWS-managed domain prefix for the Cognito user pool. |
+| <a name="output_cognito_endpoint"></a> [cognito\_endpoint](#output\_cognito\_endpoint) | Endpoint of the Cognito user pool. |
+| <a name="output_cognito_id"></a> [cognito\_id](#output\_cognito\_id) | ID of the Cognito user pool. |

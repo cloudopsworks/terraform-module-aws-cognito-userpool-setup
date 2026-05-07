@@ -11,6 +11,12 @@ locals {
   env_tags    = jsondecode(file(find_in_parent_folders("env-tags.json")))
   global_tags = jsondecode(file(find_in_parent_folders("global-tags.json")))
 
+  # Cross Account variables
+  cross_account              = try(local.local_vars.cross_account.enabled, local.local_vars.cross_account_acm, false)
+  cross_account_alias        = try(local.local_vars.cross_account.alias, "cross_account")
+  cross_account_region       = try(local.local_vars.cross_account.region, local.global_vars.default.region, "us-east-1")
+  cross_account_sts_role_arn = try(local.local_vars.cross_account.sts_role_arn, local.global_vars.default.sts_role_arn, "")
+
   tags = merge(
     local.global_tags,
     local.env_tags,
@@ -18,6 +24,33 @@ locals {
     local.spoke_tags,
     local.local_tags
   )
+}
+{{ if .acm_enabled }}
+dependency "acm" {
+  config_path                             = "{{ .acm_path }}"
+  mock_outputs_allowed_terraform_commands = ["validate", "destroy"]
+  mock_outputs = {
+    acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+  }
+}
+{{ end }}
+# Generate cross-account AWS provider block when the module validates Route53 records in another account.
+generate "provider_l" {
+  path        = "provider.l.tf"
+  disable     = !local.cross_account
+  if_exists   = "overwrite_terragrunt"
+  if_disabled = "remove_terragrunt"
+  contents    = <<EOF_PROVIDER
+provider "aws" {
+  alias  = "${local.cross_account_alias}"
+  region = "${local.cross_account_region}"
+
+  assume_role {
+    role_arn     = "${local.cross_account_sts_role_arn}"
+    session_name = "terragrunt"
+  }
+}
+EOF_PROVIDER
 }
 
 include "root" {
@@ -38,9 +71,20 @@ inputs = {
   {{- end }}
   {{- end }}
   {{- range .optionalVariables }}
-  {{- if not (eq .Name "extra_tags" "is_hub" "spoke_def" "org") }}
+  {{- if not (eq .Name "extra_tags" "is_hub" "spoke_def" "org" "cross_account_acm") }}
+  {{- if eq .Name "domain_zone" }}
+  domain_zone = try(local.local_vars.domain.zone, local.local_vars.domain_zone, {{ .DefaultValue }})
+  {{- else if eq .Name "domain_alias" }}
+  domain_alias = try(local.local_vars.domain.alias, local.local_vars.domain_alias, {{ .DefaultValue }})
+  {{- else if eq .Name "domain_certificate" }}
+  domain_certificate = try(local.local_vars.domain.certificate, local.local_vars.domain_certificate, {{ .DefaultValue }})
+  {{- else if eq .Name "domain_certificate_arn" }}
+  domain_certificate_arn = {{ if $.acm_enabled }}dependency.acm.outputs.acm_certificate_arn{{ else }}try(local.local_vars.domain.certificate_arn, local.local_vars.domain_certificate_arn, {{ .DefaultValue }}){{ end }}
+  {{- else }}
   {{ .Name }} = try(local.local_vars.{{ .Name }}, {{ .DefaultValue }})
   {{- end }}
   {{- end }}
+  {{- end }}
+  cross_account_acm = local.cross_account
   extra_tags = local.tags
 }

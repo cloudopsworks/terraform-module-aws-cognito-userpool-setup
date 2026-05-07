@@ -1,5 +1,5 @@
 ##
-# (c) 2021-2025
+# (c) 2021-2026
 #     Cloud Ops Works LLC - https://cloudops.works/
 #     Find us on:
 #       GitHub: https://github.com/cloudopsworks
@@ -152,7 +152,7 @@ variable "schema" {
 variable "email_configuration" {
   description = "Email configuration for the user pool, defaults to 'null'."
   type = object({
-    default_method        = optional(string, true)
+    default_method        = optional(bool, true)
     from                  = optional(string, null)
     reply_to_address      = optional(string, null)
     ses_configuration_set = optional(string, null)
