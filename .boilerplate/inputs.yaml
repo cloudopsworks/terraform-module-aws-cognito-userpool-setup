@@ -77,8 +77,8 @@ resource_servers: []                # (Optional) Cognito resource servers. Defau
 #  - identifier: "https://api.example.com"
 #    name: "example-api"
 #    scopes:
-#      - scope_name: "read"
-#        scope_description: "Read access"
+#      - name: "read"
+#        description: "Read access"
 
 # ACM helper alert metadata forwarded to terraform-module-aws-acm-certificate.
 alerts:
