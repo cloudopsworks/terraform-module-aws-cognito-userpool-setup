@@ -14,22 +14,26 @@ variables:
     description: "Is this a hub configuration?"
     type: bool
     default: false
+    confirm: true
   - name: tags
     order: 1
     description: "Tags"
     type: map
     default: {}
+    confirm: true
   # End - Generic Boilerplate Variables Setup
   - name: acm_enabled
     order: 2
     description: "Enable ACM module dependency"
     type: bool
     default: false
+    confirm: true
   - name: acm_path
     order: 3
     description: "Path to ACM module dependency"
     type: string
     default: "../acm"
+    confirm: true
 
 hooks:
   after:
